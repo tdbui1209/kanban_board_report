@@ -84,6 +84,7 @@ def plot_num_tasks_by_department(data, title, filename):
     plt.xlabel('Department')
     plt.ylabel('Number of tasks')
     plt.xticks(rotation=0)
+    plt.yticks(list(map(int, plt.yticks()[0])))
     plt.savefig(filename, bbox_inches='tight')
 
 
@@ -99,4 +100,21 @@ def plot_count_by_ytd(data, column, title, filename):
     plt.xlabel('Number of tasks')
     plt.xticks(list(map(int, plt.xticks()[0])))
     ax = display_num_of_columns(ax)
+    plt.savefig(filename, bbox_inches='tight')
+
+
+def plot_count_priority(data, title, filename):
+    """
+    Plot bar chart of count of tasks by priority of current month
+    """
+    temp = data[data['Current Month'] == data['Current Month'].max()]
+    temp = temp['Late'].groupby(temp['Priority']).value_counts().unstack()
+    temp.fillna(0, inplace=True)
+    ax = temp.plot(kind='bar', stacked=True, figsize=(8, 6), color=['#66b3ff', '#ff9999'])
+    ax = display_num_of_columns(ax)
+    plt.title(title)
+    plt.xlabel('Priority')
+    plt.ylabel('Number of tasks')
+    plt.xticks(rotation=0)
+    plt.yticks(list(map(int, plt.yticks()[0])))
     plt.savefig(filename, bbox_inches='tight')
