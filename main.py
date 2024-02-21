@@ -5,6 +5,7 @@ from plot import plot_pie_done, plot_pie_late, plot_num_tasks_by_department
 from plot import plot_count_by_ytd, plot_num_tasks_by_mtd, plot_count_priority
 import xlsxwriter
 from datetime import datetime
+from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -83,6 +84,15 @@ def tasks_worksheet(workbook, data):
                 worksheet.set_column(j, j, 11)
             except Exception as e:
                 pass
+    
+    avg_time = df_tasks_done['Gap'].mean().days
+    worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-2, 'Average:', workbook.add_format({'bold': True, 'border': 1}))
+    if avg_time < 0:
+        worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-1,
+            f'Overdue {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#ff9999'}))
+    else:
+        worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-1,
+            f'Early {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#9ACD32'}))
 
     worksheet.merge_range('K30:R30', f'Tasks Left: {len(df_tasks_not_done)}', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
     worksheet.write_row('K31', df_tasks_not_done.columns, workbook.add_format({'bold': True, 'border': 1}))
@@ -97,7 +107,7 @@ def tasks_worksheet(workbook, data):
             except Exception as e:
                 pass
 
-    plot_count_priority(data, 'Count of tasks by priority', 'report/count_tasks_by_priority.png')
+    plot_count_priority(data, 'Number of tasks by priority', 'report/count_tasks_by_priority.png')
     worksheet.insert_image(f'A{len(df_tasks_not_done)+35}', 'report/count_tasks_by_priority.png')
 
 
@@ -135,6 +145,16 @@ def member_worksheet(workbook, data):
                     worksheet.set_column(j, j, 11)
                 except Exception as e:
                     pass
+
+        avg_time = member_data_done['Gap'].mean().days
+        worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-2, 'Average:', workbook.add_format({'bold': True, 'border': 1}))
+        if avg_time < 0:
+            worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-1,
+                f'Overdue {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#ff9999'}))
+        else:
+            worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-1,
+                f'Early {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#9ACD32'}))
+
         format_red = workbook.add_format()
         format_red.set_bg_color('#ff9999')
 
@@ -152,7 +172,7 @@ def member_worksheet(workbook, data):
                 except Exception as e:
                     pass
         
-        plot_count_priority(member_data, f'Count of tasks by priority of {member}', f'report/count_tasks_by_priority_{member}.png')
+        plot_count_priority(member_data, f'Number of tasks by priority of {member}', f'report/count_tasks_by_priority_{member}.png')
         worksheet.insert_image(f'A{len(member_data_not_done)+35}', f'report/count_tasks_by_priority_{member}.png')
 
 
@@ -162,30 +182,35 @@ def summary(data, output_path):
     """
     workbook = xlsxwriter.Workbook(f'{output_path}/IT Department.xlsx')
 
-    # Overview worksheet
-    overview_worksheet(workbook, data)
+    with tqdm(total=3+len(data['Assigned Team'].unique()), desc='Generating summary') as pbar:
+        # Overview worksheet
+        overview_worksheet(workbook, data)
+        pbar.update(1)
 
-    # Tasks worksheet
-    tasks_worksheet(workbook, data)
+        # Tasks worksheet
+        tasks_worksheet(workbook, data)
+        pbar.update(1)
 
-    workbook.close()
+        pbar.set_description('Generating report')
+        # Workbooks for each team
+        teams = data['Assigned Team'].unique()
+        for team in teams:
+            team_data = data[data['Assigned Team'] == team]
+            team_workbook = xlsxwriter.Workbook(f'{output_path}/{team}.xlsx')
+            overview_worksheet(team_workbook, team_data)
+            tasks_worksheet(team_workbook, team_data)
 
-    # Workbooks for each team
-    teams = data['Assigned Team'].unique()
-    for team in teams:
-        team_data = data[data['Assigned Team'] == team]
-        team_workbook = xlsxwriter.Workbook(f'{output_path}/{team}.xlsx')
-        overview_worksheet(team_workbook, team_data)
-        tasks_worksheet(team_workbook, team_data)
+            # Workbooks for each member
+            member_worksheet(team_workbook, team_data)
+            team_workbook.close()
 
-    # Workbooks for each member
-        member_worksheet(team_workbook, team_data)
-        team_workbook.close()
+            pbar.update(1)
 
-    # Remove images
-    for item in os.listdir(output_path):
-        if item.endswith('.png'):
-            os.remove(os.path.join(output_path, item))
+        # Remove images
+        for item in os.listdir(output_path):
+            if item.endswith('.png'):
+                os.remove(os.path.join(output_path, item))
+        pbar.update(1)
 
 
 if __name__ == '__main__':
