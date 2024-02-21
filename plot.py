@@ -1,5 +1,3 @@
-from datetime import datetime
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
@@ -43,7 +41,6 @@ def plot_pie_done(data, title, filename):
     Plot pie chart of percentage of done tasks
     """
     temp = data[data['Current Month'] == data['Current Month'].max()]
-    temp.dropna(subset=['Due Date'], inplace=True, ignore_index=True)
     count_done = temp[temp['Bucket Name'] == 'Done'].shape[0]
     count_not_done = temp[temp['Bucket Name'] != 'Done'].shape[0]
     try:
@@ -62,19 +59,7 @@ def plot_pie_late(data, title, filename):
     Plot pie chart of percentage of late tasks
     """
     temp = data[data['Current Month'] == data['Current Month'].max()]
-    temp.dropna(subset=['Due Date'], inplace=True, ignore_index=True)
-
-    temp_done = temp[temp['Bucket Name'] == 'Done']
-    temp_not_done = temp[temp['Bucket Name'] != 'Done']
-    temp_done['Gap'] = temp_done['Due Date'].astype('datetime64[ns]') - temp_done['Completed Date'].astype('datetime64[ns]')
-    temp_done['Gap'] = temp_done['Gap'].dt.days.apply(lambda x: pd.Timedelta(x, unit='D'))
-    count_late_done = temp_done['Gap'].apply(lambda x: 1 if x.days < 0 else 0).sum()
-
-    temp_not_done['Remaining Time'] = temp_not_done['Due Date'].astype('datetime64[ns]').dt.date - datetime.now().date()
-    temp_not_done['Remaining Time'] = temp_not_done['Remaining Time'].apply(lambda x: pd.Timedelta(x, unit='D'))
-    count_late_not_done = temp_not_done['Remaining Time'].apply(lambda x: x.days).apply(lambda x: 1 if x < 0 else 0).sum()
-
-    count_late = count_late_done + count_late_not_done
+    count_late = data[data['Late'] == True].shape[0]
     count_not_late = temp.shape[0] - count_late
     try:
         ax = plt.figure(figsize=(8, 6))

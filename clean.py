@@ -1,7 +1,7 @@
 import pandas as pd
 import re
-import os
 from pandas.api.types import CategoricalDtype
+from datetime import datetime
 
 
 TEAMS = ['Infra', 'MES', 'IT Admin']
@@ -30,6 +30,23 @@ def clean(data_path, current_month):
     data['Department'] = data['Labels'].copy()
     data.drop('Labels', axis=1, inplace=True)
     data.dropna(subset=['Bucket Name'], inplace=True, ignore_index=True)
+    data.dropna(subset=['Due Date'], inplace=True, ignore_index=True)
+    data.drop('Late', axis=1, inplace=True)
+    data['Gap'] = data['Due Date'].astype('datetime64[ns]') - data['Completed Date'].astype('datetime64[ns]')
+    data['Remaining Days'] = data['Due Date'].astype('datetime64[ns]').dt.date - datetime.now().date()
+    
+    for col, row in data.iterrows():
+        if row['Bucket Name'] == 'Done':
+            if row['Gap'].days < 0:
+                data.at[col, 'Late'] = True
+            else:
+                data.at[col, 'Late'] = False
+        else:
+            if row['Remaining Days'].days < 0:
+                data.at[col, 'Late'] = True
+            else:
+                data.at[col, 'Late'] = False
+
     
     assigned_team = []
     for i in range(len(data)):

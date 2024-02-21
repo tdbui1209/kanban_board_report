@@ -10,8 +10,8 @@ warnings.filterwarnings('ignore')
 
 
 CREATED_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-COLUMN_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Completed Date', 'Department']
-COLUMN_NOT_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Department']
+COLUMN_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Completed Date', 'Department', 'Gap']
+COLUMN_NOT_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Department', 'Remaining Days']
 
 
 def overview_worksheet(workbook, data):
@@ -64,15 +64,12 @@ def tasks_worksheet(workbook, data):
     # Write data to Tasks worksheet
     df_tasks = data.copy()
     df_tasks = df_tasks[df_tasks['Current Month'] == df_tasks['Current Month'].max()]
-    df_tasks.dropna(subset=['Due Date'], inplace=True, ignore_index=True)
 
     df_tasks_done = df_tasks[df_tasks['Bucket Name'] == 'Done']
     df_tasks_done = df_tasks_done[COLUMN_DONE_TASKS]
-    df_tasks_done['Gap'] = df_tasks_done['Due Date'].astype('datetime64[ns]') - df_tasks_done['Completed Date'].astype('datetime64[ns]')
     
     df_tasks_not_done = df_tasks[df_tasks['Bucket Name'] != 'Done']
     df_tasks_not_done = df_tasks_not_done[COLUMN_NOT_DONE_TASKS]
-    df_tasks_not_done['Remaining Days'] = df_tasks_not_done['Due Date'].astype('datetime64[ns]').dt.date - datetime.now().date()
 
     worksheet.merge_range('A30:H30', 'Done Tasks', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
     worksheet.write_row('A31', df_tasks_done.columns, workbook.add_format({'bold': True, 'border': 1}))
@@ -120,9 +117,7 @@ def member_worksheet(workbook, data):
         member_data_not_done = member_data[member_data['Bucket Name'] != 'Done']
 
         member_data_done = member_data_done[COLUMN_DONE_TASKS]
-        member_data_done['Gap'] = member_data_done['Due Date'].astype('datetime64[ns]') - member_data_done['Completed Date'].astype('datetime64[ns]')
         member_data_not_done = member_data_not_done[COLUMN_NOT_DONE_TASKS]
-        member_data_not_done['Remaining Days'] = member_data_not_done['Due Date'].astype('datetime64[ns]').dt.date - datetime.now().date()
         
         worksheet.merge_range('A30:H30', 'Done Tasks', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
         worksheet.write_row('A31', member_data_done.columns, workbook.add_format({'bold': True, 'border': 1}))
