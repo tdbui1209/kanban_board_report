@@ -191,6 +191,8 @@ def summary(data, output_path):
         tasks_worksheet(workbook, data)
         pbar.update(1)
 
+        workbook.close()
+
         pbar.set_description('Generating report')
         # Workbooks for each team
         teams = data['Assigned Team'].unique()
