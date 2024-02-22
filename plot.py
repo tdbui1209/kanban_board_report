@@ -17,6 +17,17 @@ def display_num_of_columns(ax):
             ax.annotate(str(int(p.get_height())), (p.get_x() + p.get_width() / 2, p.get_y() + p.get_height() / 2),
                         ha='center', va='bottom')
     return ax
+
+
+def display_num_of_columns_horizontal(ax):
+    """
+    Display number of tasks on top of each bar
+    """
+    for p in ax.patches:
+        if p.get_width() > 0:
+            ax.annotate(str(int(p.get_width())), (p.get_width() / 2, p.get_y() + p.get_height() / 2),
+                        ha='left', va='center')
+    return ax
             
 
 def plot_num_tasks_by_mtd(data, column, title, filename):
@@ -94,12 +105,12 @@ def plot_count_by_ytd(data, column, title, filename):
     """
     temp = data[data['Current Month'] == data['Current Month'].max()]
     ax = plt.figure(figsize=(12, 8))
-    sns.countplot(data=temp, y=column, palette='Set2')
+    ax = sns.countplot(y=column, data=temp, palette='Set2')
+    ax = display_num_of_columns_horizontal(ax)
     plt.title(title)
     plt.ylabel(column)
     plt.xlabel('Number of tasks')
     plt.xticks(list(map(int, plt.xticks()[0])))
-    ax = display_num_of_columns(ax)
     plt.savefig(filename, bbox_inches='tight')
 
 
