@@ -24,6 +24,7 @@ def clean(data_path, current_month):
     data['Completed By'] = data['Completed By'].astype('category')
     data['Labels'].fillna('Not assigned', inplace=True)
     data['Labels'] = data['Labels'].astype('category')
+    data = data[data['Bucket Name'].isin(BUCKET_CATEGORIES)]
     data['Bucket Name'] = data['Bucket Name'].astype(CategoricalDtype(categories=BUCKET_CATEGORIES, ordered=True))
     data['Progress'] = data['Progress'].astype(CategoricalDtype(categories=PROGRESS_CATEGORIES, ordered=True))
     data['Priority'] = data['Priority'].astype(CategoricalDtype(categories=PRIORITY_CATEGORIES, ordered=True))
