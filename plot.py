@@ -70,7 +70,7 @@ def plot_pie_late(data, title, filename):
     Plot pie chart of percentage of late tasks
     """
     temp = data[data['Current Month'] == data['Current Month'].max()]
-    count_late = data[data['Late'] == True].shape[0]
+    count_late = temp[temp['Late'] == True].shape[0]
     count_not_late = temp.shape[0] - count_late
     try:
         ax = plt.figure(figsize=(8, 6))
