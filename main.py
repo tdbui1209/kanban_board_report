@@ -180,6 +180,7 @@ def summary(data, output_path):
     """
     Generate summary of the data
     """
+    os.makedirs(output_path, exist_ok=True)
     workbook = xlsxwriter.Workbook(f'{output_path}/IT Department.xlsx')
 
     with tqdm(total=3+len(data['Assigned Team'].unique()), desc='Generating summary') as pbar:
@@ -218,4 +219,4 @@ def summary(data, output_path):
 if __name__ == '__main__':
     total_data = concat_data()
     summary(total_data, 'report')
-    
+    os.remove('data/total_data.csv')
