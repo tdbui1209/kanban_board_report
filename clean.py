@@ -2,6 +2,7 @@ import pandas as pd
 import re
 from pandas.api.types import CategoricalDtype
 from datetime import datetime
+import os
 
 
 TEAMS = ['Infra', 'MES', 'IT Admin']
@@ -66,9 +67,11 @@ def clean(data_path, current_month):
 
 
 def concat_data():
-    january_data = clean('data/January_data.csv', 'January')
-    february_data = clean('data/February_data.csv', 'February')
-    total_data = pd.concat([january_data, february_data], ignore_index=True)
+    total_data = pd.DataFrame()
+    for file in os.listdir('data'):
+        if file.endswith('.csv'):
+            temp_data = clean(f'data/{file}', file.split('_')[0])
+            total_data = pd.concat([total_data, temp_data], ignore_index=True)
     total_data['Current Month'] = total_data['Current Month'].astype(CategoricalDtype(categories=MONTHS, ordered=True))
     total_data.to_csv('data/total_data.csv', index=False)
     return total_data
