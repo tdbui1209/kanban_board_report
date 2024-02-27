@@ -62,6 +62,7 @@ def clean(data_path, current_month):
                 assigned_team.append(team[0][1:-1])
 
     data['Assigned Team'] = assigned_team
+    data = data[data['Assigned Team'] != 'Not assigned']
     data['Current Month'] = current_month
     return data
 
