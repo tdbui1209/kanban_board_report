@@ -15,7 +15,7 @@ Python 3.10.11
 3. Change directory
    ```cd kanban_board_report```
 4. Create virtual enviroment
-   ```python -m venv venv
+   ```python -m venv venv```
 5. Install nessesarry packages
    ```pip install -r requirements.txt```
 
