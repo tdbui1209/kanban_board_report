@@ -9,8 +9,15 @@ The report generated is ...
 Python 3.10.11
 
 ## Steps
-1. pip install -r requirements.txt
-
+1. Install python 3.10.11
+2. Clone this repos
+   ```git clone https://github.com/tdbui1209/kanban_board_report.git```
+3. Change directory
+   ```cd kanban_board_report```
+4. Create virtual enviroment
+   ```python -m venv venv
+5. Install nessesarry packages
+   ```pip install -r requirements.txt```
 
 # How to use
 ## Steps
