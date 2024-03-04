@@ -108,7 +108,7 @@ def tasks_worksheet(workbook, data):
                 pass
 
     plot_count_priority(data, 'Number of tasks by priority', 'report/count_tasks_by_priority.png')
-    worksheet.insert_image(f'A{len(df_tasks_not_done)+35}', 'report/count_tasks_by_priority.png')
+    worksheet.insert_image(f'A{len(df_tasks_done)+35}', 'report/count_tasks_by_priority.png')
 
 
 def member_worksheet(workbook, data):
@@ -173,7 +173,7 @@ def member_worksheet(workbook, data):
                     pass
         
         plot_count_priority(member_data, f'Number of tasks by priority of {member}', f'report/count_tasks_by_priority_{member}.png')
-        worksheet.insert_image(f'A{len(member_data_not_done)+35}', f'report/count_tasks_by_priority_{member}.png')
+        worksheet.insert_image(f'A{len(member_data_done)+35}', f'report/count_tasks_by_priority_{member}.png')
 
 
 def summary(data, output_path):
@@ -181,7 +181,7 @@ def summary(data, output_path):
     Generate summary of the data
     """
     os.makedirs(output_path, exist_ok=True)
-    workbook = xlsxwriter.Workbook(f'{output_path}/IT Department.xlsx')
+    workbook = xlsxwriter.Workbook(f'{output_path}/HPH IT Department.xlsx')
 
     with tqdm(total=3+len(data['Assigned Team'].unique()), desc='Generating summary') as pbar:
         # Overview worksheet
@@ -217,6 +217,10 @@ def summary(data, output_path):
 
 
 if __name__ == '__main__':
-    total_data = concat_data()
-    summary(total_data, 'report')
-    os.remove('data/total_data.csv')
+    try:
+        total_data = concat_data()
+        summary(total_data, 'report')
+        os.remove('data/total_data.csv')
+    except Exception as e:
+        with open('LOG.log', 'a') as f:
+            f.write(f'{datetime.now()}: {e}\n')
