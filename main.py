@@ -3,9 +3,12 @@ import os
 from clean import concat_data
 from plot import plot_pie_done, plot_pie_late, plot_num_tasks_by_department
 from plot import plot_count_by_ytd, plot_num_tasks_by_mtd, plot_count_priority
+from download_data import download_data
 import xlsxwriter
 from datetime import datetime
+import time
 from tqdm import tqdm
+import json
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -217,7 +220,13 @@ def summary(data, output_path):
 
 
 if __name__ == '__main__':
+    config = json.load(open('config.json'))
+    download_directory = config['download_directory']
+    if not os.path.exists('data'):
+        os.makedirs('data')
     try:
+        download_data(download_directory)
+        time.sleep(5)
         total_data = concat_data()
         summary(total_data, 'report')
         os.remove('data/total_data.csv')
