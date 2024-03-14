@@ -3,15 +3,15 @@ import re
 from pandas.api.types import CategoricalDtype
 from datetime import datetime
 import os
+import json
 
 
-TEAMS = ['Infra', 'MES', 'IT Admin']
-BUCKET_CATEGORIES = ['Ongoing', 'Ongoing-Risky', 'Monitoring', 'Testing', 'Done']
-PROGRESS_CATEGORIES = ['Not started', 'In progress', 'Completed']
-PRIORITY_CATEGORIES = ['Medium', 'Important', 'Urgent']
-PATTERN = r"\[.*?\]"
-MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
-          'November', 'December']
+CONFIG = json.load(open('config.json'))
+TEAMS = CONFIG['teams']
+BUCKET_CATEGORIES = CONFIG['bucket_categories']
+PROGRESS_CATEGORIES = CONFIG['progress_categories']
+PRIORITY_CATEGORIES = CONFIG['priority_categories']
+MONTHS = CONFIG['months']
 
 
 def clean(data_path, current_month):
@@ -52,7 +52,7 @@ def clean(data_path, current_month):
     
     assigned_team = []
     for i in range(len(data)):
-        team = re.findall(PATTERN, data['Task Name'][i])
+        team = re.findall(r"\[.*?\]", data['Task Name'][i])
         if len(team) == 0:
             assigned_team.append('Not assigned')
         else:

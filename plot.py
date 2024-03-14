@@ -1,11 +1,12 @@
+import json
 import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
 matplotlib.use('Agg')
 
 
-MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October',
-          'November', 'December']
+CONFIG = json.load(open('config.json'))
+MONTHS = CONFIG['months']
 
 
 def display_num_of_columns(ax):
