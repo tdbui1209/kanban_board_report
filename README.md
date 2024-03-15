@@ -4,6 +4,15 @@
 These script is designed to generate report of Kanban board that helps PM or team member to keep track there own tasks.
 The report generated is ...
 
+## Original data
+![image](https://github.com/tdbui1209/kanban_board_report/assets/72682397/4e6e5648-450c-4654-a710-c8269ab2272f)
+
+## Results
+![image](https://github.com/tdbui1209/kanban_board_report/assets/72682397/9dc193a1-8fd2-44c3-ae0e-e98c52dde28c)
+![image](https://github.com/tdbui1209/kanban_board_report/assets/72682397/ffb8c4e1-d271-43a7-ae2d-63786ecd7238)
+![image](https://github.com/tdbui1209/kanban_board_report/assets/72682397/aa977732-5c8e-4d4c-85eb-237337b38a6f)
+
+
 # Installation
 ## Prerequisites
 Python 3.10.11
