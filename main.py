@@ -1,235 +1,134 @@
 import pandas as pd
 import os
-from clean import concat_data
-from plot import plot_pie_done, plot_pie_late, plot_num_tasks_by_department
-from plot import plot_count_by_ytd, plot_num_tasks_by_mtd, plot_count_priority
-from download_data import download_data
 import xlsxwriter
 from datetime import datetime
-import time
 from tqdm import tqdm
-import json
+import yaml
+from tkinter import filedialog as fd
+
+from clean import clean
+from plot import plot_pie_done, plot_pie_late, plot_num_tasks_by_unit
+from plot import plot_count_by_ytd, plot_num_tasks_by_mtd
+
 import warnings
 warnings.filterwarnings('ignore')
 
 
 CREATED_TIME = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-COLUMN_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Completed Date', 'Department', 'Gap']
-COLUMN_NOT_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Department', 'Remaining Days']
+COLUMN_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Completed Date', 'Unit']
+COLUMN_NOT_DONE_TASKS = ['Task Name', 'Priority', 'Assigned To', 'Start Date', 'Due Date', 'Unit', 'Remaining Days']
 
 
-def overview_worksheet(workbook, data):
+def create_charts(worksheet, data, output_path, suffix):
     """
-    Generate overview worksheet
+    Create charts in worksheet
     """
-    worksheet = workbook.add_worksheet('Overview')
-    worksheet.write('A1', f'Created time: {CREATED_TIME}')
-
     # Number of tasks by progress and month
-    plot_num_tasks_by_mtd(data, 'Bucket Name', 'Tasks of each bucket by MTD', 'report/num_tasks_by_progress_and_month.png')
-    worksheet.insert_image('A4', 'report/num_tasks_by_progress_and_month.png')
+    plot_num_tasks_by_mtd(data, 'Bucket Name', 'Tasks of each bucket by MTD', f'{output_path}/num_tasks_by_progress_and_month_{suffix}.png')
+    worksheet.insert_image('A4', f'{output_path}/num_tasks_by_progress_and_month_{suffix}.png')
 
     # Pie chart of percentage of done tasks
-    plot_pie_done(data, 'Percentage of done tasks', 'report/pie_done.png')
-    worksheet.insert_image('Q4', 'report/pie_done.png')
+    plot_pie_done(data, 'Percentage of done tasks', f'{output_path}/pie_done_{suffix}.png')
+    worksheet.insert_image('Q4', f'{output_path}/pie_done_{suffix}.png')
 
     # Pie chart of percentage of late tasks
-    plot_pie_late(data, 'Percentage of late tasks', 'report/pie_late.png')
-    worksheet.insert_image('Y4', 'report/pie_late.png')
+    plot_pie_late(data, 'Percentage of late tasks', f'{output_path}/pie_late_{suffix}.png')
+    worksheet.insert_image('Y4', f'{output_path}/pie_late_{suffix}.png')
 
-    # Number of tasks by department
-    plot_num_tasks_by_department(data, 'Tasks requested of department by MTD', 'report/num_tasks_by_department.png')
-    worksheet.insert_image('A38', 'report/num_tasks_by_department.png')
-
-    # Number of tasks by assigned team
-    plot_num_tasks_by_mtd(data, 'Assigned Team', 'Tasks assigned to team by MTD', 'report/num_tasks_by_assigned_team.png')
-    worksheet.insert_image('Q38', 'report/num_tasks_by_assigned_team.png')
+    # Number of tasks by unit
+    plot_num_tasks_by_unit(data, 'Tasks requested of unit by YTD', f'{output_path}/num_tasks_by_unit_{suffix}.png')
+    worksheet.insert_image('A38', f'{output_path}/num_tasks_by_unit_{suffix}.png')
 
     # Count of tasks each bucket by YTD
-    plot_count_by_ytd(data, 'Bucket Name', 'Tasks of each bucket by YTD', 'report/count_tasks_by_bucket.png')
-    worksheet.insert_image('A73', 'report/count_tasks_by_bucket.png')
+    plot_count_by_ytd(data, 'Bucket Name', 'Tasks of each bucket by YTD', f'{output_path}/count_tasks_by_bucket_{suffix}.png')
+    worksheet.insert_image('AG4', f'{output_path}/count_tasks_by_bucket_{suffix}.png')
 
 
-def tasks_worksheet(workbook, data):
+def create_tasks_table(worksheet, workbook, data):
     """
-    Generate tasks worksheet
+    Create table of tasks in worksheet
     """
-    worksheet = workbook.add_worksheet('Tasks')
-    worksheet.write('A1', f'Created time: {CREATED_TIME}')
-
-    # Pie chart of percentage of done tasks
-    plot_pie_done(data, 'Percentage of done tasks', 'report/pie_done.png')
-    worksheet.insert_image('A4', 'report/pie_done.png')
-
-    # Pie chart of percentage of late tasks
-    plot_pie_late(data, 'Percentage of late tasks', 'report/pie_late.png')
-    worksheet.insert_image('K4', 'report/pie_late.png')
-
-    # Write data to Tasks worksheet
-    df_tasks = data.copy()
-    df_tasks = df_tasks[df_tasks['Current Month'] == df_tasks['Current Month'].max()]
-
-    df_tasks_done = df_tasks[df_tasks['Bucket Name'] == 'Done']
+    df_tasks_done = data[data['Bucket Name'] == 'Done']
     df_tasks_done = df_tasks_done[COLUMN_DONE_TASKS]
     
-    df_tasks_not_done = df_tasks[df_tasks['Bucket Name'] != 'Done']
+    df_tasks_not_done = data[data['Bucket Name'] != 'Done']
     df_tasks_not_done = df_tasks_not_done[COLUMN_NOT_DONE_TASKS]
 
-    worksheet.merge_range('A30:H30', 'Done Tasks', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
-    worksheet.write_row('A31', df_tasks_done.columns, workbook.add_format({'bold': True, 'border': 1}))
-    for i in range(len(df_tasks_done)):
-        for j in range(len(df_tasks_done.columns)):
-            try:
-                if df_tasks_done.iloc[i, 7] < pd.Timedelta(0):
-                    worksheet.write(i+31, j, df_tasks_done.iloc[i][j], workbook.add_format({'bg_color': '#ff9999', 'border': 1}))
-                else:
-                    worksheet.write(i+31, j, df_tasks_done.iloc[i][j], workbook.add_format({'border': 1}))
-                worksheet.set_column(j, j, 11)
-            except Exception as e:
-                pass
-    
-    avg_time = df_tasks_done['Gap'].mean().days
-    worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-2, 'Average:', workbook.add_format({'bold': True, 'border': 1}))
-    if avg_time < 0:
-        worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-1,
-            f'Overdue {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#ff9999'}))
-    else:
-        worksheet.write(len(df_tasks_done)+31, len(df_tasks_done.columns)-1,
-            f'Early {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#9ACD32'}))
+    create_table(worksheet, workbook, df_tasks_done, f'Done Tasks: {len(df_tasks_done)}', 'Q', 30)
+    create_table(worksheet, workbook, df_tasks_not_done, f'Left Tasks: {len(df_tasks_not_done)}', 'Y', 30)
 
-    worksheet.merge_range('K30:R30', f'Tasks Left: {len(df_tasks_not_done)}', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
-    worksheet.write_row('K31', df_tasks_not_done.columns, workbook.add_format({'bold': True, 'border': 1}))
-    for i in range(len(df_tasks_not_done)):
-        for j in range(len(df_tasks_not_done.columns)):
+
+def create_table(worksheet, workbook, data, title, start_col, start_row):
+    """
+    Create table in worksheet
+    """
+    end_col = chr(ord(start_col) + len(data.columns) - 1)
+    if end_col[-1] > 'Z':
+        end_col = end_col[:-1] + 'A' + chr(ord(end_col[-1]) % ord('Z') + ord('A') - 1)
+
+    worksheet.merge_range(f'{start_col}{start_row}:{end_col}{start_row}', title, workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
+    worksheet.write_row(f'{start_col}{start_row+1}', data.columns, workbook.add_format({'bold': True, 'border': 1}))
+    for i in range(len(data)):
+        for j in range(len(data.columns)):
             try:
-                if df_tasks_not_done.iloc[i, 6] < pd.Timedelta(0):
-                    worksheet.write(i+31, j+10, df_tasks_not_done.iloc[i, j], workbook.add_format({'bg_color': '#ff9999', 'border': 1}))
+                if start_col[-1] > 'Z':
+                    start_col = start_col[:-1] + 'A' + chr(ord(start_col[-1]) % ord('Z') + ord('A') - 1)
+                worksheet.write(i+start_row+1, j+ord(start_col)-ord('A'), data.iloc[i][j], workbook.add_format({'border': 1}))
+                if data.iloc[i, 6] < pd.Timedelta(0):
+                    worksheet.write(i+start_row+1, j+ord(start_col)-ord('A'), data.iloc[i][j], workbook.add_format({'bg_color': '#ff9999', 'border': 1}))
                 else:
-                    worksheet.write(i+31, j+10, df_tasks_not_done.iloc[i, j], workbook.add_format({'border': 1}))
-                worksheet.set_column(j+10, j+10, 11)
+                    worksheet.write(i+start_row+1, j+ord(start_col)-ord('A'), data.iloc[i][j], workbook.add_format({'border': 1}))
+                worksheet.set_column(j+ord(start_col)-ord('A'), j+ord(start_col)-ord('A'), 11)
             except Exception as e:
                 pass
 
-    plot_count_priority(data, 'Number of tasks by priority', 'report/count_tasks_by_priority.png')
-    worksheet.insert_image(f'A{len(df_tasks_done)+35}', 'report/count_tasks_by_priority.png')
+
+def overview_worksheet(workbook, data, output_path, worksheet_title='Overview'):
+    """
+    Generate summary worksheet
+    """
+    worksheet = workbook.add_worksheet(worksheet_title)
+    worksheet.write('A1', f'Created time: {CREATED_TIME}')
+
+    create_charts(worksheet, data, output_path, worksheet_title)
+    create_tasks_table(worksheet, workbook, data)
 
 
-def member_worksheet(workbook, data):
-    for member in data['Assigned To'].unique():
-        worksheet = workbook.add_worksheet(member)
-        worksheet.write('A1', f'Created time: {CREATED_TIME}')
-
-        member_data = data[data['Assigned To'] == member]
-        member_data = member_data[member_data['Current Month'] == member_data['Current Month'].max()]
-        member_data.dropna(subset=['Due Date'], inplace=True, ignore_index=True)
-
-        plot_pie_done(member_data, f'Percentage of done tasks of {member}', f'report/pie_done_{member}.png')
-        worksheet.insert_image('A4', f'report/pie_done_{member}.png')
-
-        plot_pie_late(member_data, f'Percentage of late tasks of {member}', f'report/pie_late_{member}.png')
-        worksheet.insert_image('K4', f'report/pie_late_{member}.png')
-
-        member_data_done = member_data[member_data['Bucket Name'] == 'Done']
-        member_data_not_done = member_data[member_data['Bucket Name'] != 'Done']
-
-        member_data_done = member_data_done[COLUMN_DONE_TASKS]
-        member_data_not_done = member_data_not_done[COLUMN_NOT_DONE_TASKS]
-        
-        worksheet.merge_range('A30:H30', 'Done Tasks', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
-        worksheet.write_row('A31', member_data_done.columns, workbook.add_format({'bold': True, 'border': 1}))
-
-        for i in range(len(member_data_done)):
-            for j in range(len(member_data_done.columns)):
-                try:
-                    if member_data_done.iloc[i, 7] < pd.Timedelta(0):
-                        worksheet.write(i+31, j, member_data_done.iloc[i][j], workbook.add_format({'bg_color': '#ff9999', 'border': 1}))
-                    else:
-                        worksheet.write(i+31, j, member_data_done.iloc[i][j], workbook.add_format({'border': 1}))
-                    worksheet.set_column(j, j, 11)
-                except Exception as e:
-                    pass
-
-        avg_time = member_data_done['Gap'].mean().days
-        worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-2, 'Average:', workbook.add_format({'bold': True, 'border': 1}))
-        if avg_time < 0:
-            worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-1,
-                f'Overdue {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#ff9999'}))
-        else:
-            worksheet.write(len(member_data_done)+31, len(member_data_done.columns)-1,
-                f'Early {avg_time} day(s)', workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#9ACD32'}))
-
-        format_red = workbook.add_format()
-        format_red.set_bg_color('#ff9999')
-
-        worksheet.merge_range('K30:R30', f'Tasks Left: {len(member_data_not_done)}', workbook.add_format({'bold': True, 'valign': 'vcenter', 'align': 'center'}))
-        worksheet.write_row('K31', member_data_not_done.columns, workbook.add_format({'bold': True, 'border': 1}))
-
-        for i in range(len(member_data_not_done)):
-            for j in range(len(member_data_not_done.columns)):
-                try:
-                    if member_data_not_done.iloc[i, 6] < pd.Timedelta(0):
-                        worksheet.write(i+31, j+10, member_data_not_done.iloc[i, j], workbook.add_format({'bg_color': '#ff9999', 'border': 1}))
-                    else:
-                        worksheet.write(i+31, j+10, member_data_not_done.iloc[i, j], workbook.add_format({'border': 1}))
-                    worksheet.set_column(j+10, j+10, 11)
-                except Exception as e:
-                    pass
-        
-        plot_count_priority(member_data, f'Number of tasks by priority of {member}', f'report/count_tasks_by_priority_{member}.png')
-        worksheet.insert_image(f'A{len(member_data_done)+35}', f'report/count_tasks_by_priority_{member}.png')
-
-
-def summary(data, output_path):
+def summary(data):
     """
     Generate summary of the data
     """
-    os.makedirs(output_path, exist_ok=True)
-    workbook = xlsxwriter.Workbook(f'{output_path}/HPH IT Department.xlsx')
+    OUTPUT_PATH = 'report' + f'/W{datetime.now().isocalendar().week}'
+    os.makedirs(OUTPUT_PATH, exist_ok=True)
+    workbook = xlsxwriter.Workbook(f'{OUTPUT_PATH}/HPH IT Department.xlsx')
 
-    with tqdm(total=3+len(data['Assigned Team'].unique()), desc='Generating summary') as pbar:
+    with tqdm(total=1+len(data['Assigned Team'].unique()), desc='Generating summary') as pbar:
         # Overview worksheet
-        overview_worksheet(workbook, data)
-        pbar.update(1)
-
-        # Tasks worksheet
-        tasks_worksheet(workbook, data)
+        overview_worksheet(workbook, data, OUTPUT_PATH)
         pbar.update(1)
 
         workbook.close()
-
-        pbar.set_description('Generating report')
         # Workbooks for each team
         teams = data['Assigned Team'].unique()
         for team in teams:
             team_data = data[data['Assigned Team'] == team]
-            team_workbook = xlsxwriter.Workbook(f'{output_path}/{team}.xlsx')
-            overview_worksheet(team_workbook, team_data)
-            tasks_worksheet(team_workbook, team_data)
-
-            # Workbooks for each member
-            member_worksheet(team_workbook, team_data)
+            team_workbook = xlsxwriter.Workbook(f'{OUTPUT_PATH}/{team}.xlsx')
+            overview_worksheet(team_workbook, team_data, OUTPUT_PATH)
+            
+            for team_member in team_data['Assigned To'].unique():
+                overview_worksheet(team_workbook, team_data[team_data['Assigned To'] == team_member], OUTPUT_PATH, team_member)
             team_workbook.close()
 
             pbar.update(1)
 
-        # Remove images
-        for item in os.listdir(output_path):
+        # Remove temp chart images
+        for item in os.listdir(OUTPUT_PATH):
             if item.endswith('.png'):
-                os.remove(os.path.join(output_path, item))
+                os.remove(os.path.join(OUTPUT_PATH, item))
         pbar.update(1)
 
 
 if __name__ == '__main__':
-    config = json.load(open('config.json'))
-    download_directory = config['download_directory']
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    try:
-        download_data(download_directory)
-        time.sleep(5)
-        total_data = concat_data()
-        summary(total_data, 'report')
-        os.remove('data/total_data.csv')
-    except Exception as e:
-        with open('LOG.log', 'a') as f:
-            f.write(f'{datetime.now()}: {e}\n')
+    config = yaml.load(open('config.yml'), Loader=yaml.FullLoader)
+    data = clean(fd.askopenfilename())
+    summary(data)
