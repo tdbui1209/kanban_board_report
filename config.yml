@@ -1,0 +1,8 @@
+download_directory: "C:\\Users\\ivan_bui\\Downloads"
+teams: ["Infra", "MES", "IT Admin", "Intern"]
+bucket_categories: ["Ongoing", "Ongoing-Risky", "Monitoring", "Testing", "Done"]
+progress_categories: ["Not started", "In progress", "Completed"]
+priority_categories: ["Medium", "Important", "Urgent"]
+months: ["January", "February", "March", "April", "May", "June", "July", "August",
+  "September", "October", "November", "December"]
+colors: ["#5DE2E7", "#ff9999", "#ffcc99", "#FFDE59", "#BFD641"]  # "Ongoing", "Ongoing-Risky", "Monitoring", "Testing", "Done"
