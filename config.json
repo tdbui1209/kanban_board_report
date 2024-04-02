@@ -1,9 +1,0 @@
-{
-    "download_directory": "C:\\Users\\ivan_bui\\Downloads",
-    "teams": ["Infra", "MES", "IT Admin"],
-    "bucket_categories" : ["Ongoing", "Ongoing-Risky", "Monitoring", "Testing", "Done"],
-    "progress_categories" : ["Not started", "In progress", "Completed"],
-    "priority_categories" : ["Medium", "Important", "Urgent"],
-    "months" : ["January", "February", "March", "April", "May", "June", "July", "August",
-        "September", "October", "November", "December"]
-}
