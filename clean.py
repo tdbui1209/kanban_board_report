@@ -2,10 +2,10 @@ import pandas as pd
 import re
 from pandas.api.types import CategoricalDtype
 from datetime import datetime
-import json
+import yaml
 
 
-CONFIG = json.load(open('config.json'))
+CONFIG = yaml.load(open('config.yml'), Loader=yaml.FullLoader)
 TEAMS = CONFIG['teams']
 BUCKET_CATEGORIES = CONFIG['bucket_categories']
 PROGRESS_CATEGORIES = CONFIG['progress_categories']
